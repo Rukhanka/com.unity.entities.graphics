@@ -19,6 +19,7 @@ namespace Unity.Rendering
         static readonly int k_BlendShapeCount = Shader.PropertyToID("g_BlendShapeCount");
         static readonly int k_BlendShapeWeightStartIndex = Shader.PropertyToID("g_BlendShapeWeightStartIndex");
         static readonly int k_BlendShapeVerticesBuffer = Shader.PropertyToID("_BlendShapeVertexData");
+        static readonly int k_SharedMeshVertexBuffer = Shader.PropertyToID("_SharedMeshVertexBuffer");
 
         ComputeShader m_ComputeShader;
         PushMeshDataSystem m_PushMeshDataSystem;
@@ -92,7 +93,10 @@ namespace Unity.Rendering
                 var mesh = m_RendererSystem.GetMesh(meshData.MeshID);
                 var blendShapeBuffer = mesh.GetBlendShapeBuffer(BlendShapeBufferLayout.PerVertex);
                 Assert.IsNotNull(blendShapeBuffer);
+                var vertexBuffer = mesh.GetVertexBuffer(0);
+                Assert.IsNotNull(vertexBuffer);
 
+                m_ComputeShader.SetBuffer(m_Kernel, k_SharedMeshVertexBuffer, vertexBuffer);
                 m_ComputeShader.SetBuffer(m_Kernel, k_BlendShapeVerticesBuffer, blendShapeBuffer);
                 m_ComputeShader.Dispatch(m_Kernel, 1024, 1, 1);
 

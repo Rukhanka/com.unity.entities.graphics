@@ -27,6 +27,7 @@ struct BlendShapeVertexDelta
 
 uniform ByteAddressBuffer		 		_BlendShapeVertexData;
 uniform ByteAddressBuffer				_BlendShapeWeights;
+uniform ByteAddressBuffer				_SharedMeshVertexBuffer;
 uniform RWStructuredBuffer<VertexData>	_DeformedMeshData : register(u1);
 
 uint g_VertexCount;
@@ -61,6 +62,25 @@ float LoadBlendWeight(uint index)
 	return asfloat(_BlendShapeWeights.Load(index << 2));
 }
 
+VertexData LoadVertex(uint index)
+{
+	// Vertex attribute is assumed to be position, normal & tangent.
+	// These are float3, float3 and float4 respectively, thus the stride is 40. 
+	uint offset = index * 40;
+
+	// Note that VertexData uses float3 for tangent.
+	float3 pos = asfloat(_SharedMeshVertexBuffer.Load3(offset + 0 * 12));
+	float3 nor = asfloat(_SharedMeshVertexBuffer.Load3(offset + 1 * 12));
+	float3 tan = asfloat(_SharedMeshVertexBuffer.Load3(offset + 2 * 12));
+
+	VertexData data = (VertexData)0;
+	data.Position = pos;
+	data.Normal = nor;
+	data.Tangent = tan;
+
+	return data;
+}
+
 [numthreads(NBR_THREADS_X, NBR_THREADS_Y, NBR_THREADS_Z)]
 void BlendShapeComputeKernel(uint id : SV_GroupIndex, uint3 groupId : SV_GroupID)
 {
@@ -73,7 +93,7 @@ void BlendShapeComputeKernel(uint id : SV_GroupIndex, uint3 groupId : SV_GroupID
 		const uint deformedMeshVertexIndex = g_DeformedMeshStartIndex + i;
 		const uint blendShapeWeightOffset = g_BlendShapeWeightStartIndex + (i / g_VertexCount) * g_BlendShapeCount;
 
-		VertexData vertex = _DeformedMeshData[deformedMeshVertexIndex];
+		VertexData vertex = LoadVertex(sharedMeshVertexIndex);
 
 		const int2 range = LoadBlendShapeRange(sharedMeshVertexIndex);
 		for (int j = range[0]; j < range[1]; j += SIZE_OF_VERTEX_DELTA)
