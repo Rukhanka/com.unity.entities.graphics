@@ -12,17 +12,17 @@ struct DeformedVertexDelta
 };
 
 uniform StructuredBuffer<DeformedVertexDelta> _DeformedMeshData : register(t1);
-//uniform StructuredBuffer<DeformedVertexDelta> _PreviousFrameDeformedMeshData;
+uniform StructuredBuffer<DeformedVertexDelta> _PreviousFrameDeformedMeshData;
 
-void DeformInputVertex_float(float3 positionIn, float3 normalIn, float3 tangentIn, uint vertexID, float meshStartIndex, out float3 positionOut, out float3 normalOut, out float3 tangentOut)
+void DeformInputVertex_float(float3 positionIn, float3 normalIn, float3 tangentIn, uint vertexID, out float3 positionOut, out float3 normalOut, out float3 tangentOut)
 {
-    const DeformedVertexDelta vertexData = _DeformedMeshData[asuint(meshStartIndex) + vertexID];
+    const DeformedVertexDelta vertexData = _DeformedMeshData[asuint(UNITY_ACCESS_HYBRID_INSTANCED_PROP(_ComputeMeshIndex, float)) + vertexID];
 
     positionOut = positionIn + GetPosition(vertexData);
     normalOut = normalIn + GetNormal(vertexData);
     tangentOut = tangentIn + GetTangent(vertexData);
 }
-/*
+#ifdef DOTS_DEFORMED
 void ApplyDeformedVertexData(uint vertexID, inout float3 positionOut, inout float3 normalOut, inout float3 tangentOut)
 {
     const uint4 materialProperty = asuint(UNITY_ACCESS_HYBRID_INSTANCED_PROP(_DotsDeformationParams, float4));
@@ -31,9 +31,9 @@ void ApplyDeformedVertexData(uint vertexID, inout float3 positionOut, inout floa
 
     const DeformedVertexData vertexData = _DeformedMeshData[meshStartIndex + vertexID];
 
-    positionOut += vertexData.Position;
-    normalOut += vertexData.Normal;
-    tangentOut += vertexData.Tangent;
+    positionOut += GetPosition(vertexData);
+    normalOut += GetNormal(vertexData);
+    tangentOut += GetTangent(vertexData);
 }
 
 void ApplyPreviousFrameDeformedVertexPosition(in uint vertexID, inout float3 positionOS)
@@ -46,7 +46,7 @@ void ApplyPreviousFrameDeformedVertexPosition(in uint vertexID, inout float3 pos
     // Index zero is reserved as 'uninitialized'.
     if (meshStartIndex > 0)
     {
-        positionOS += _PreviousFrameDeformedMeshData[meshStartIndex + vertexID].Position;
+        positionOS += GetPosition(_PreviousFrameDeformedMeshData[meshStartIndex + vertexID]);
     }
     // Else grab the current frame position
     else
@@ -54,12 +54,12 @@ void ApplyPreviousFrameDeformedVertexPosition(in uint vertexID, inout float3 pos
         const uint currentFrameIndex = materialProperty[2];
         const uint currentFrameMeshStartIndex = materialProperty[currentFrameIndex];
 
-        positionOS += _DeformedMeshData[currentFrameMeshStartIndex + vertexID].Position;
+        positionOS += GetPosition(_DeformedMeshData[currentFrameMeshStartIndex + vertexID]);
     }
 }
-*/
+#endif // DOTS_DEFORMED
 #else
-void DeformInputVertex_float(float3 positionIn, float3 normalIn, float3 tangentIn, uint vertexID, uint meshStartIndex, out float3 positionOut, out float3 normalOut, out float3 tangentOut)
+void DeformInputVertex_float(float3 positionIn, float3 normalIn, float3 tangentIn, uint vertexID, out float3 positionOut, out float3 normalOut, out float3 tangentOut)
 {
     // Empty body for non dots variants
     positionOut = positionIn;
