@@ -39,11 +39,7 @@ namespace Unity.Rendering
     sealed partial class PushBlendWeightSystem : SystemBase { }
 
     [WorldSystemFilter(WorldSystemFilterFlags.Default | WorldSystemFilterFlags.Editor)]
-    [UpdateInGroup(typeof(DeformationsInPresentation)), UpdateAfter(typeof(PushMeshDataSystem))]
-    sealed partial class InstantiateDeformationSystem : SystemBase { }
-
-    [WorldSystemFilter(WorldSystemFilterFlags.Default | WorldSystemFilterFlags.Editor)]
-    [UpdateInGroup(typeof(DeformationsInPresentation)), UpdateAfter(typeof(InstantiateDeformationSystem))]
+    [UpdateInGroup(typeof(DeformationsInPresentation)), UpdateAfter(typeof(PushBlendWeightSystem))]
     sealed partial class BlendShapeDeformationSystem : SystemBase { }
 
     [WorldSystemFilter(WorldSystemFilterFlags.Default | WorldSystemFilterFlags.Editor)]

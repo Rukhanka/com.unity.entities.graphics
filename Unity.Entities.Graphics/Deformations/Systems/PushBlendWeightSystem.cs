@@ -6,6 +6,7 @@ using Unity.Deformations;
 using Unity.Entities;
 using Unity.Jobs;
 using Unity.Profiling;
+using Unity.Burst;
 
 namespace Unity.Rendering
 {
@@ -38,6 +39,7 @@ namespace Unity.Rendering
 
         [BurstCompile]
         [WithAll(typeof(SharedMeshTracker))]
+        [BurstCompile]
         partial struct ConstructHashMapJob : IJobEntity
         {
             public NativeParallelMultiHashMap<Entity, int>.ParallelWriter DeformedEntityToComputeIndexParallel;
@@ -80,7 +82,7 @@ namespace Unity.Rendering
                 }
             }
         }
-        
+
         protected override void OnUpdate()
         {
             if (m_PushMeshDataSystem.BlendShapeWeightCount == 0)

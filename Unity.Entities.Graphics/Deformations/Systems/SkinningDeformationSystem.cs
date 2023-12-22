@@ -18,6 +18,7 @@ namespace Unity.Rendering
         static readonly int k_SharedMeshBoneCount = Shader.PropertyToID("g_SharedMeshBoneCount");
         static readonly int k_SkinMatricesStartIndex = Shader.PropertyToID("g_SkinMatricesStartIndex");
         static readonly int k_SharedMeshBoneWeightsBuffer = Shader.PropertyToID("_SharedMeshBoneWeights");
+        static readonly int k_SharedMeshVertexBuffer = Shader.PropertyToID("_SharedMeshVertexBuffer");
 
         ComputeShader m_ComputeShader;
         PushMeshDataSystem m_PushMeshDataSystem;
@@ -88,13 +89,16 @@ namespace Unity.Rendering
                 if (!meshData.HasSkinning)
                     continue;
 
+                var mesh = m_RendererSystem.GetMesh(meshData.MeshID);
+                var vertexBuffer = mesh.GetVertexBuffer(0);
+                Assert.IsNotNull(vertexBuffer);
+
                 m_ComputeShader.SetInt(k_VertexCount, meshData.VertexCount);
                 m_ComputeShader.SetInt(k_SharedMeshBoneCount, meshData.BoneCount);
                 m_ComputeShader.SetInt(k_DeformedMeshStartIndex, batchData.MeshVertexIndex);
                 m_ComputeShader.SetInt(k_SkinMatricesStartIndex, batchData.SkinMatrixIndex);
                 m_ComputeShader.SetInt(k_InstancesCount, batchData.InstanceCount);
 
-                var mesh = m_RendererSystem.GetMesh(meshData.MeshID);
                 var skinWeightLayout = mesh.skinWeightBufferLayout;
                 Assert.IsFalse(skinWeightLayout == SkinWeights.None);
                 var skinWeightBuffer = mesh.GetBoneWeightBuffer(skinWeightLayout);
@@ -109,6 +113,7 @@ namespace Unity.Rendering
                     _ => m_KernelDense1,
                 };
 
+                m_ComputeShader.SetBuffer(kernel, k_SharedMeshVertexBuffer, vertexBuffer);
                 m_ComputeShader.SetBuffer(kernel, k_SharedMeshBoneWeightsBuffer, skinWeightBuffer);
                 m_ComputeShader.Dispatch(kernel, 1024, 1, 1);
 

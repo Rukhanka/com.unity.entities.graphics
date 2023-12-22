@@ -42,6 +42,7 @@ struct SparseSkinInfluence
 
 uniform ByteAddressBuffer				_SharedMeshBoneWeights;
 uniform ByteAddressBuffer				_SkinMatrices;
+uniform ByteAddressBuffer				_SharedMeshVertexBuffer;
 uniform RWStructuredBuffer<VertexData>	_DeformedMeshData : register(u1);
 
 uint g_VertexCount;
@@ -117,9 +118,28 @@ float3x4 LoadSkinMatrix(uint index)
 		);
 }
 
+VertexData LoadVertex(uint index)
+{
+	// Vertex attribute is assumed to be position, normal & tangent.
+	// These are float3, float3 and float4 respectively, thus the stride is 40. 
+	uint offset = index * 40;
+
+	// Note that VertexData uses float3 for tangent.
+	float3 pos = asfloat(_SharedMeshVertexBuffer.Load3(offset + 0 * 12));
+	float3 nor = asfloat(_SharedMeshVertexBuffer.Load3(offset + 1 * 12));
+	float3 tan = asfloat(_SharedMeshVertexBuffer.Load3(offset + 2 * 12));
+
+	VertexData data = (VertexData)0;
+	data.Position = pos;
+	data.Normal = nor;
+	data.Tangent = tan;
+
+	return data;
+}
+
 VertexData SkinVertexDense1(in uint sharedVertexIndex, in uint vertexIndex, in uint boneOffset)
 {
-	VertexData vertex = _DeformedMeshData[vertexIndex];
+	VertexData vertex = LoadVertex(sharedVertexIndex);
 	const float4 basePos = float4(vertex.Position, 1);
 	const float4 baseNrm = float4(vertex.Normal, 0);
 	const float4 baseTan = float4(vertex.Tangent, 0);
@@ -137,7 +157,7 @@ VertexData SkinVertexDense1(in uint sharedVertexIndex, in uint vertexIndex, in u
 #define SKIN_VERTEX_DENSE(countPerVertex)																			\
 VertexData SkinVertexDense##countPerVertex(in uint sharedVertexIndex, in uint vertexIndex, in uint boneOffset)		\
 {																													\
-	VertexData vertex = _DeformedMeshData[vertexIndex];																\
+	VertexData vertex = LoadVertex(sharedVertexIndex);																\
 	const float4 basePos = float4(vertex.Position, 1);																\
 	const float4 baseNor = float4(vertex.Normal, 0);																\
 	const float4 baseTan = float4(vertex.Tangent, 0);																\
