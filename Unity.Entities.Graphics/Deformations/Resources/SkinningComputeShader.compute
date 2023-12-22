@@ -2,6 +2,7 @@
 #pragma kernel SkinningDense2ComputeKernel
 #pragma kernel SkinningDense4ComputeKernel
 #pragma kernel SkinningSparseComputeKernel
+#pragma enable_d3d11_debug_symbols
 
 #define NBR_THREAD_GROUPS 1024
 
@@ -11,6 +12,8 @@
 
 #define THREAD_COUNT NBR_THREADS_Y * NBR_THREADS_X * NBR_THREADS_Z
 #define STEP_SIZE THREAD_COUNT * NBR_THREAD_GROUPS
+
+#include "CompressedVertexDelta.hlsl"
 
 struct VertexData
 {
@@ -43,7 +46,7 @@ struct SparseSkinInfluence
 uniform ByteAddressBuffer				_SharedMeshBoneWeights;
 uniform ByteAddressBuffer				_SkinMatrices;
 uniform ByteAddressBuffer				_SharedMeshVertexBuffer;
-uniform RWStructuredBuffer<VertexData>	_DeformedMeshData : register(u1);
+uniform RWStructuredBuffer<CompressedVertexDelta>	_DeformedMeshData : register(u1);
 
 uint g_VertexCount;
 uint g_SharedMeshBoneCount;
@@ -151,6 +154,10 @@ VertexData SkinVertexDense1(in uint sharedVertexIndex, in uint vertexIndex, in u
 	vertex.Normal   = mul(skinMatrix, baseNrm);
 	vertex.Tangent  = mul(skinMatrix, baseTan);
 
+    vertex.Position -= basePos.xyz;
+    vertex.Normal -= baseNrm.xyz;
+    vertex.Tangent -= baseTan.xyz;
+	
 	return vertex;
 }
 
@@ -174,7 +181,11 @@ VertexData SkinVertexDense##countPerVertex(in uint sharedVertexIndex, in uint ve
 		vertex.Tangent  += mul(skinMatrix, baseTan) * influence.weights[i];											\
 	}																												\
 																													\
-	return vertex;																									\
+    vertex.Position -= basePos.xyz;                                                                                 \
+    vertex.Normal -= baseNor.xyz;                                                                                   \
+    vertex.Tangent -= baseTan.xyz;                                                                                  \
+                                                                                                                    \
+	return vertex;																							    		\
 }
 
 SKIN_VERTEX_DENSE(2)
@@ -182,7 +193,7 @@ SKIN_VERTEX_DENSE(4)
 
 VertexData SkinVertexSparse(in uint sharedVertexIndex, in uint vertexIndex, in uint boneOffset)
 {
-	VertexData vertex = _DeformedMeshData[vertexIndex];
+	VertexData vertex = LoadVertex(sharedVertexIndex);
 	const float4 basePos = float4(vertex.Position, 1);
 	const float4 baseNor = float4(vertex.Normal, 0);
 	const float4 baseTan = float4(vertex.Tangent, 0);
@@ -198,6 +209,10 @@ VertexData SkinVertexSparse(in uint sharedVertexIndex, in uint vertexIndex, in u
 		vertex.Normal   += mul(skinMatrix, baseNor) * influence.weight;
 		vertex.Tangent  += mul(skinMatrix, baseTan) * influence.weight;
 	}
+
+    vertex.Position -= basePos.xyz;
+    vertex.Normal -= baseNor.xyz;
+    vertex.Tangent -= baseTan.xyz;
 
 	return vertex;
 }
@@ -217,7 +232,7 @@ void Skinning##function##ComputeKernel(uint id : SV_GroupIndex, uint3 groupId : 
 																													\
 		VertexData vertex = SkinVertex##function(sharedMeshVertexIndex, deformedMeshVertexIndex, boneOffset);		\
 																													\
-		_DeformedMeshData[deformedMeshVertexIndex] = vertex;														\
+		_DeformedMeshData[deformedMeshVertexIndex] = CompressVertexDelta(vertex.Position, vertex.Normal, vertex.Tangent);\
 	}																												\
 }
 
