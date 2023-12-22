@@ -4,10 +4,8 @@ using Unity.Collections;
 using Unity.Collections.LowLevel.Unsafe;
 using Unity.Deformations;
 using Unity.Entities;
-using Unity.Jobs;
 using Unity.Mathematics;
 using Unity.Profiling;
-using Unity.Burst;
 
 namespace Unity.Rendering
 {
@@ -40,7 +38,6 @@ namespace Unity.Rendering
 
         [BurstCompile]
         [WithAll(typeof(SharedMeshTracker))]
-        [BurstCompile]
         partial struct ConstructHashMapJob : IJobEntity
         {
             public NativeParallelMultiHashMap<Entity, int>.ParallelWriter DeformedEntityToComputeIndexParallel;
