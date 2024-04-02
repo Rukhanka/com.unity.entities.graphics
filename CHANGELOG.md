@@ -4,6 +4,41 @@ uid: changelog
 
 # Changelog
 
+## [1.2.0] - 2024-03-22
+
+### Changed
+
+* fixed the issue with LOD objects being culled when the camera is static
+
+### Fixed
+
+* Entities Graphics should now never run out of space in the NewChunks buffer.
+* A null reference exception thrown in some cases when using MeshRenderers with missing materials and/or meshes
+
+
+## [1.2.0-pre.12] - 2024-02-13
+
+### Added
+
+* `RenderMeshUnmanaged` an unmanaged IComponentData using the new UnityObjRef<T> for big performance gains in baking!
+* Support for light probe anchor overrides
+
+### Changed
+
+* MaterialMeshInfo.SubMesh chaned from sbyte to ushort, allowing for the full range of submesh indices.
+* The sharedcomponents `Lightmaps` and `RenderMeshArray` now store UnityObjRef<T> instead.
+
+### Deprecated
+
+* The baking sharedcomponent `RenderMesh` is now obsolete, in favor of a new `RenderMeshUnmanaged`.
+
+### Fixed
+
+* Improved handling of smaller transforms
+* Light probes now use the center of world bounding box as the reference point, same as game objects
+* Materials sometimes not correctly baked when using ENABLE_MESH_RENDERER_SUBMESH_DATA_SHARING
+
+
 ## [1.2.0-pre.6] - 2023-12-13
 
 ### Changed
